@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300;
+  }
+  
+  .btn-secondary {
+    @apply bg-gradient-to-r from-secondary-500 to-secondary-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300;
+  }
+  
+  .btn-outline {
+    @apply border-2 border-primary-400 text-primary-400 font-semibold py-3 px-6 rounded-xl hover:bg-primary-400 hover:text-black transform hover:-translate-y-0.5 transition-all duration-300;
+  }
+  
+  .gradient-bg {
+    @apply bg-gradient-to-br from-primary-500 to-purple-600;
+  }
+  
+  .card {
+    @apply bg-black rounded-2xl shadow-xl border border-gray-800;
+  }
+  
+  .form-input {
+    @apply w-full px-4 py-3 border-2 border-gray-700 bg-black text-white rounded-xl focus:border-primary-500 focus:ring-4 focus:ring-primary-900 transition-all duration-300 outline-none;
+  }
+  
+  .section-title {
+    @apply text-4xl font-bold text-white mb-4;
+  }
+  
+  .section-subtitle {
+    @apply text-xl text-white/90 max-w-2xl mx-auto leading-relaxed;
+  }
+}
