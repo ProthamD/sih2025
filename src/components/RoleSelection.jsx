@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { FaUser, FaUserShield, FaArrowRight } from 'react-icons/fa'
+import API_URL from '../config/api'
 
 const RoleSelection = ({ onRoleSelect }) => {
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -28,8 +29,8 @@ const RoleSelection = ({ onRoleSelect }) => {
     e.preventDefault()
     
     const endpoint = isLogin 
-      ? `http://localhost:5000/api/auth/${selectedRole}/login`
-      : `http://localhost:5000/api/auth/${selectedRole}/signup`
+      ? `${API_URL}/auth/${selectedRole}/login`
+      : `${API_URL}/auth/${selectedRole}/signup`
 
     try {
       const response = await fetch(endpoint, {

@@ -14,6 +14,7 @@ import {
   FaCreditCard,
   FaClock 
 } from 'react-icons/fa'
+import API_URL from '../config/api'
 
 const RequestSection = () => {
   const [formData, setFormData] = useState({
@@ -191,7 +192,7 @@ const RequestSection = () => {
         formDataToSend.append('images', img.file)
       })
 
-      const response = await fetch('http://localhost:5000/api/reports', {
+      const response = await fetch(`${API_URL}/reports`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

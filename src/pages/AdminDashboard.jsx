@@ -36,7 +36,7 @@ const AdminDashboard = () => {
   const fetchReports = async () => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch('http://localhost:5000/api/reports/admin/all', {
+      const response = await fetch(`${API_URL}/reports/admin/all`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -58,7 +58,7 @@ const AdminDashboard = () => {
   const updateReportStatus = async (reportId, status, truck = '', driver = '', notes = '') => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:5000/api/reports/${reportId}/status`, {
+      const response = await fetch(`${API_URL}/reports/${reportId}/status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

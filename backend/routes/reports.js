@@ -28,6 +28,10 @@ const upload = multer({
 // Create a new report (User)
 router.post('/', protect, upload.array('images', 5), async (req, res) => {
   try {
+    console.log('Report submission - Body:', req.body);
+    console.log('Report submission - Files:', req.files ? req.files.length : 0);
+    console.log('Report submission - User:', req.user ? req.user._id : 'No user');
+    
     const { name, email, phone, wasteType, description, urgency, location } = req.body;
 
     // Parse location if it's a string

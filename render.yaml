@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: waste-management-app
+    env: node
+    region: oregon
+    buildCommand: npm run install-all && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: PORT
+        value: 10000

@@ -23,7 +23,7 @@ const MyReports = () => {
   const fetchMyReports = async () => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch('http://localhost:5000/api/reports/user/my-reports', {
+      const response = await fetch(`${API_URL}/reports/user/my-reports`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -46,7 +46,7 @@ const MyReports = () => {
     setVerifying(reportId)
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:5000/api/reports/${reportId}/verify`, {
+      const response = await fetch(`${API_URL}/reports/${reportId}/verify`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
