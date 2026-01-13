@@ -153,7 +153,89 @@ const RequestSection = () => {
     )
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    
+    // Basic validation
+    if (!formData.name || !formData.email || !formData.phone || !formData.wasteType) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    if (formData.images.length === 0) {
+      alert('Please upload at least one image of the waste area')
+      return
+    }
+
+    if (!formData.location) {
+      alert('Please share your location to help us locate the waste area')
+      return
+    }
+
+    try {
+      // Get token from localStorage (you should implement proper auth)
+      const token = localStorage.getItem('token')
+      
+      // Create FormData for multipart/form-data
+      const formDataToSend = new FormData()
+      formDataToSend.append('name', formData.name)
+      formDataToSend.append('email', formData.email)
+      formDataToSend.append('phone', formData.phone)
+      formDataToSend.append('wasteType', formData.wasteType)
+      formDataToSend.append('description', formData.description)
+      formDataToSend.append('urgency', formData.urgency)
+      formDataToSend.append('location', JSON.stringify(formData.location))
+      
+      // Append images
+      formData.images.forEach(img => {
+        formDataToSend.append('images', img.file)
+      })
+
+      const response = await fetch('http://localhost:5000/api/reports', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formDataToSend
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        console.log('Waste Report submitted:', data)
+        setIsSubmitted(true)
+        
+        // Clean up image URLs
+        formData.images.forEach(img => URL.revokeObjectURL(img.preview))
+        
+        // Reset form after 5 seconds
+        setTimeout(() => {
+          setIsSubmitted(false)
+          setFormData({
+            name: '',
+            email: '',
+            phone: '',
+            wasteType: '',
+            description: '',
+            urgency: 'normal',
+            location: null,
+            images: []
+          })
+          if (fileInputRef.current) {
+            fileInputRef.current.value = ''
+          }
+        }, 5000)
+      } else {
+        alert(data.message || 'Failed to submit report. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error submitting report:', error)
+      alert('Failed to submit report. Please make sure you are logged in and try again.')
+    }
+  }
+
+  // Fallback for when user is not logged in (temporary mock submission)
+  const handleSubmitMock = (e) => {
     e.preventDefault()
     
     // Basic validation
@@ -179,7 +261,7 @@ const RequestSection = () => {
       id: 'WR' + Date.now()
     }
     
-    console.log('Waste Report submitted:', submissionData)
+    console.log('Waste Report submitted (Mock):', submissionData)
     setIsSubmitted(true)
     
     // Clean up image URLs

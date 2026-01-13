@@ -12,6 +12,30 @@ dist
 dist-ssr
 *.local
 
+# Environment variables (SENSITIVE - DO NOT COMMIT)
+.env
+.env.local
+.env.development
+.env.production
+backend/.env
+backend/.env.local
+
+# Uploads and user-generated content
+uploads/
+backend/uploads/
+
+# Database files
+*.sqlite
+*.db
+
+# Build outputs
+backend/dist/
+backend/build/
+
+# Testing and coverage
+coverage/
+.cache/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +46,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# OS files
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp

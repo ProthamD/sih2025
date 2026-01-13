@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { useRequests } from '../context/RequestContext'
+import { useState, useEffect } from 'react'
 import { 
   FaCheck, 
   FaTimes, 
@@ -19,12 +18,83 @@ import {
 } from 'react-icons/fa'
 
 const AdminDashboard = () => {
-  const { requests, workers, updateRequestStatus, assignWorker, getRequestStats } = useRequests()
+  const [requests, setRequests] = useState([])
   const [selectedTab, setSelectedTab] = useState('pending')
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [assigningWorker, setAssigningWorker] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [assignForm, setAssignForm] = useState({
+    truck: '',
+    driver: '',
+    notes: ''
+  })
 
-  const stats = getRequestStats()
+  useEffect(() => {
+    fetchReports()
+  }, [])
+
+  const fetchReports = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('http://localhost:5000/api/reports/admin/all', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setRequests(data)
+      } else {
+        console.error('Failed to fetch reports')
+      }
+    } catch (error) {
+      console.error('Error fetching reports:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const updateReportStatus = async (reportId, status, truck = '', driver = '', notes = '') => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`http://localhost:5000/api/reports/${reportId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status,
+          assignedTruck: truck,
+          assignedDriver: driver,
+          adminNotes: notes
+        })
+      })
+
+      if (response.ok) {
+        fetchReports() // Refresh the list
+        setAssigningWorker(null)
+        setAssignForm({ truck: '', driver: '', notes: '' })
+      } else {
+        alert('Failed to update report status')
+      }
+    } catch (error) {
+      console.error('Error updating report:', error)
+      alert('Failed to update report')
+    }
+  }
+
+  const getStats = () => {
+    return {
+      total: requests.length,
+      pending: requests.filter(r => r.status === 'pending').length,
+      approved: requests.filter(r => r.status === 'approved' || r.status === 'assigned').length,
+      completed: requests.filter(r => r.status === 'completed').length
+    }
+  }
+
+  const stats = getStats()
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -59,22 +129,41 @@ const AdminDashboard = () => {
     setAssigningWorker(requestId)
   }
 
-  const handleAssignWorker = (requestId, workerId) => {
-    assignWorker(requestId, workerId)
-    setAssigningWorker(null)
+  const handleAssignSubmit = (e) => {
+    e.preventDefault()
+    updateReportStatus(
+      assigningWorker, 
+      'assigned', 
+      assignForm.truck, 
+      assignForm.driver, 
+      assignForm.notes
+    )
   }
 
   const handleRejectRequest = (requestId) => {
-    updateRequestStatus(requestId, 'rejected', 'Request rejected by admin')
+    updateReportStatus(requestId, 'rejected', '', '', 'Request rejected by admin')
   }
 
   const handleCompleteRequest = (requestId) => {
-    updateRequestStatus(requestId, 'completed', 'Task completed successfully')
+    updateReportStatus(requestId, 'completed', '', '', 'Task completed successfully')
   }
 
   const filteredRequests = selectedTab === 'all' 
     ? requests 
-    : requests.filter(request => request.status === selectedTab)
+    : requests.filter(request => {
+        if (selectedTab === 'approved') {
+          return request.status === 'approved' || request.status === 'assigned'
+        }
+        return request.status === selectedTab
+      })
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black pt-16 flex items-center justify-center">
+        <FaSpinner className="text-4xl text-primary-400 animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-black pt-16">
@@ -164,12 +253,12 @@ const AdminDashboard = () => {
         {/* Requests List */}
         <div className="space-y-6">
           {filteredRequests.map(request => (
-            <div key={request.id} className="card p-6">
+            <div key={request._id} className="card p-6">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 {/* Request Info */}
                 <div className="flex-1">
                   <div className="flex items-center gap-4 mb-4">
-                    <h3 className="text-xl font-bold text-white">ID: {request.id}</h3>
+                    <h3 className="text-xl font-bold text-white">ID: {request._id.slice(-6)}</h3>
                     <span className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(request.status)}`}>
                       {getStatusIcon(request.status)}
                       {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
@@ -202,21 +291,44 @@ const AdminDashboard = () => {
                       </div>
                       <div className="flex items-center gap-2 text-gray-300">
                         <FaMapMarkerAlt className="text-secondary-400" />
-                        <span className="truncate">{request.location.address}</span>
+                        <span className="truncate">
+                          {request.location.latitude.toFixed(4)}, {request.location.longitude.toFixed(4)}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2 text-gray-300">
                         <FaClock className="text-primary-400" />
-                        <span>{request.submittedAt.toLocaleDateString()} at {request.submittedAt.toLocaleTimeString()}</span>
+                        <span>{new Date(request.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
 
                   <p className="text-gray-300 mb-4">{request.description}</p>
 
-                  {request.assignedWorker && (
+                  {/* Image Preview */}
+                  {request.images && request.images.length > 0 && (
+                    <div className="mb-4">
+                      <div className="flex gap-2 overflow-x-auto">
+                        {request.images.slice(0, 3).map((image, index) => (
+                          <img 
+                            key={index}
+                            src={image} 
+                            alt={`Waste ${index + 1}`}
+                            className="w-20 h-20 object-cover rounded-lg border border-gray-700"
+                          />
+                        ))}
+                        {request.images.length > 3 && (
+                          <div className="w-20 h-20 bg-gray-800 rounded-lg flex items-center justify-center text-gray-400">
+                            +{request.images.length - 3}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {request.assignedTruck && (
                     <div className="flex items-center gap-2 text-blue-400 bg-blue-900/20 px-3 py-2 rounded-lg">
                       <FaUserCheck />
-                      <span>Assigned to: {request.assignedWorker.name} ({request.assignedWorker.contact})</span>
+                      <span>Truck: {request.assignedTruck} | Driver: {request.assignedDriver}</span>
                     </div>
                   )}
                 </div>
@@ -234,14 +346,14 @@ const AdminDashboard = () => {
                   {request.status === 'pending' && (
                     <>
                       <button
-                        onClick={() => handleApproveRequest(request.id)}
+                        onClick={() => handleApproveRequest(request._id)}
                         className="btn-secondary flex items-center justify-center gap-2"
                       >
                         <FaCheck />
                         Approve & Assign
                       </button>
                       <button
-                        onClick={() => handleRejectRequest(request.id)}
+                        onClick={() => handleRejectRequest(request._id)}
                         className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
                       >
                         <FaTimes />
@@ -250,9 +362,9 @@ const AdminDashboard = () => {
                     </>
                   )}
 
-                  {request.status === 'approved' && (
+                  {(request.status === 'approved' || request.status === 'assigned') && (
                     <button
-                      onClick={() => handleCompleteRequest(request.id)}
+                      onClick={() => handleCompleteRequest(request._id)}
                       className="btn-primary flex items-center justify-center gap-2"
                     >
                       <FaCheckCircle />
@@ -276,40 +388,72 @@ const AdminDashboard = () => {
 
       {/* Worker Assignment Modal */}
       {assigningWorker && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="card p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-white mb-4">Assign Worker</h3>
-            <p className="text-gray-300 mb-6">Select a worker to assign to request {assigningWorker}</p>
+            <h3 className="text-xl font-bold text-white mb-4">Assign Truck & Driver</h3>
+            <p className="text-gray-300 mb-6">Assign cleanup resources to this request</p>
             
-            <div className="space-y-3 mb-6">
-              {workers.filter(worker => worker.status === 'available').map(worker => (
-                <button
-                  key={worker.id}
-                  onClick={() => handleAssignWorker(assigningWorker, worker.id)}
-                  className="w-full p-4 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-white">{worker.name}</p>
-                      <p className="text-sm text-gray-400">{worker.specialization}</p>
-                      <p className="text-sm text-gray-400">{worker.contact}</p>
-                    </div>
-                    <div className="text-green-400">
-                      <FaUsers />
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <form onSubmit={handleAssignSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Truck Number
+                </label>
+                <input
+                  type="text"
+                  value={assignForm.truck}
+                  onChange={(e) => setAssignForm({...assignForm, truck: e.target.value})}
+                  className="form-input"
+                  placeholder="e.g., TRK-001"
+                  required
+                />
+              </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setAssigningWorker(null)}
-                className="btn-outline flex-1"
-              >
-                Cancel
-              </button>
-            </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Driver Name
+                </label>
+                <input
+                  type="text"
+                  value={assignForm.driver}
+                  onChange={(e) => setAssignForm({...assignForm, driver: e.target.value})}
+                  className="form-input"
+                  placeholder="e.g., John Doe"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Admin Notes (Optional)
+                </label>
+                <textarea
+                  value={assignForm.notes}
+                  onChange={(e) => setAssignForm({...assignForm, notes: e.target.value})}
+                  className="form-input resize-none"
+                  rows="3"
+                  placeholder="Any special instructions..."
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAssigningWorker(null)
+                    setAssignForm({ truck: '', driver: '', notes: '' })
+                  }}
+                  className="btn-outline flex-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary flex-1"
+                >
+                  Assign
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -364,14 +508,18 @@ const AdminDashboard = () => {
 
               {selectedRequest.images && selectedRequest.images.length > 0 && (
                 <div>
-                  <h4 className="font-semibold text-white mb-3">Images</h4>
+                  <h4 className="font-semibold text-white mb-3">Images ({selectedRequest.images.length})</h4>
                   <div className="grid grid-cols-2 gap-4">
-                    {selectedRequest.images.map(image => (
-                      <div key={image.id} className="bg-gray-800 rounded-lg p-2">
-                        <div className="aspect-video bg-gray-700 rounded flex items-center justify-center">
-                          <FaEye className="text-gray-500 text-2xl" />
-                        </div>
-                        <p className="text-sm text-gray-400 mt-2">{image.name}</p>
+                    {selectedRequest.images.map((image, index) => (
+                      <div key={index} className="bg-gray-800 rounded-lg overflow-hidden">
+                        <img 
+                          src={image} 
+                          alt={`Waste report ${index + 1}`}
+                          className="w-full h-48 object-cover"
+                          onError={(e) => {
+                            e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23333" width="100" height="100"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23666">No Image</text></svg>';
+                          }}
+                        />
                       </div>
                     ))}
                   </div>
