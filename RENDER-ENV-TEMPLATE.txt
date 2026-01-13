@@ -1,0 +1,18 @@
+# Copy these environment variables to Render
+
+# Backend Web Service Environment Variables:
+NODE_ENV=production
+MONGODB_URI=mongodb+srv://2023itb081pratham_db_user:protham123@cluster0.z5r2ib5.mongodb.net/waste-management?retryWrites=true&w=majority&appName=Cluster0
+JWT_SECRET=generate-a-random-64-character-string-here
+PORT=10000
+FRONTEND_URL=https://your-frontend-app.onrender.com
+
+# Frontend Static Site Environment Variables:
+VITE_API_URL=https://your-backend-app.onrender.com
+
+# Instructions:
+# 1. For Backend: Add first 5 variables (NODE_ENV through FRONTEND_URL)
+# 2. For Frontend: Add only VITE_API_URL
+# 3. Generate JWT_SECRET using: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+# 4. Update FRONTEND_URL after deploying frontend
+# 5. Update VITE_API_URL with your actual backend URL

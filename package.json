@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "server": "cd backend && npm start",
     "start-dev": "concurrently \"npm run dev\" \"npm run server\"",
-    "install-all": "npm install && cd backend && npm install"
+    "install-all": "npm install && cd backend && npm install",
+    "build-all": "npm install --include=dev && cd backend && npm install --include=dev && cd .. && npm run build",
+    "start": "cd backend && npm start"
   },
   "dependencies": {
     "react": "^18.2.0",
